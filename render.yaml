@@ -1,0 +1,109 @@
+services:
+  - type: web
+    name: opensourcematcher-api
+    env: php
+    plan: free
+    region: oregon
+    buildCommand: composer install --no-interaction --prefer-dist --optimize-autoloader
+    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    envVars:
+      - key: APP_NAME
+        value: OpenSource Matcher API
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://opensourcematcher.onrender.com
+      - key: LOG_CHANNEL
+        value: error
+      - key: LOG_LEVEL
+        value: warning
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_LIFETIME
+        value: 120
+      - key: SESSION_SECURE_COOKIE
+        value: true
+      - key: BCRYPT_ROUNDS
+        value: 12
+      - key: CACHE_STORE
+        value: redis
+      - key: QUEUE_CONNECTION
+        value: redis
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: opensourcematcher-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: opensourcematcher-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: opensourcematcher-db
+          property: name
+      - key: DB_USERNAME
+        fromDatabase:
+          name: opensourcematcher-db
+          property: username
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: opensourcematcher-db
+          property: password
+      - key: REDIS_HOST
+        fromRedis:
+          name: opensourcematcher-redis
+          property: host
+      - key: REDIS_PORT
+        fromRedis:
+          name: opensourcematcher-redis
+          property: port
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_REDIRECT_URI
+        value: https://opensourcematcher.onrender.com/auth/github/callback
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        value: https://opensourcematcher.onrender.com/auth/google/callback
+      - key: FRONTEND_URL
+        value: https://opensourcematcher.vercel.app
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://opensourcematcher.vercel.app
+      - key: SANCTUM_STATEFUL_DOMAINS
+        value: opensourcematcher.vercel.app
+      - key: VITE_APP_NAME
+        value: OpenSource Matcher API
+      - key: MAIL_MAILER
+        value: log
+      - key: AWS_ACCESS_KEY_ID
+        value: ""
+      - key: AWS_SECRET_ACCESS_KEY
+        value: ""
+      - key: AWS_DEFAULT_REGION
+        value: us-east-1
+      - key: AWS_BUCKET
+        value: ""
+      - key: AWS_USE_PATH_STYLE_ENDPOINT
+        value: false
+
+databases:
+  - name: opensourcematcher-db
+    plan: free
+    region: oregon
+
+redis:
+  - name: opensourcematcher-redis
+    plan: free
+    region: oregon
