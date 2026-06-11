@@ -32,13 +32,17 @@ export default function IssuesExplorerPage() {
         if (filters.difficulty) params.difficulty = filters.difficulty
         if (filters.language.trim()) params.language = filters.language.trim()
 
-        const { data } = await api.get('/issues', {
+        const { data } = await api.get('/issues', {  // Changed back to '/issues'
           params,
           signal: controller.signal,
         })
         if (!cancelled) {
           setIssues(data.data ?? [])
-          setMeta(data.meta ?? null)
+          setMeta({
+            current_page: data.meta?.current_page ?? 1,
+            per_page: data.meta?.per_page ?? 10,
+            total: data.meta?.total ?? 0
+          })
         }
       } catch (err) {
         if (!cancelled && err.code !== 'ABORT_ERR') {
