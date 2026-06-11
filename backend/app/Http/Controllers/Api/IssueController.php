@@ -38,7 +38,7 @@ class IssueController extends Controller
             ], 502);
         }
 
-        // Return the items directly in the format expected by the frontend
+        // Return the items directly from GitHub (no DB storage) in the format expected by the frontend
         return response()->json([
             'data' => $paginator->items(),
             'meta' => [
