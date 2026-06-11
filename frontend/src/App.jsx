@@ -18,6 +18,7 @@ import DevOpsMonitoring from './pages/devops/Monitoring'
 import DevOpsPipelines from './pages/devops/Pipelines'
 import DevOpsDeployments from './pages/devops/Deployments'
 import DevOpsSystemHealth from './pages/devops/SystemHealth'
+import DemoPage from './pages/DemoPage'
 
 function NavLinks() {
   const { user } = useAuth()
@@ -32,6 +33,9 @@ function NavLinks() {
       </Link>
       <Link to="/issues" className={linkClass}>
         Recherche
+      </Link>
+      <Link to="/demo" className={linkClass}>
+        Démo
       </Link>
       {user ? (
         <>
@@ -112,6 +116,7 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
+          <Route path="/demo" element={<DemoPage />} />
 
           {/* DevOps Admin Routes */}
           <Route
