@@ -691,7 +691,7 @@ DD_APM_ENABLED=true
 
 ```
 SECURITY
-☑ APP_DEBUG=false
+☑cd APP_DEBUG=false
 ☑ APP_ENV=production
 ☑ Token expiration configuré (7 jours)
 ☑ HTTPS activé (auto sur Vercel/Render)
