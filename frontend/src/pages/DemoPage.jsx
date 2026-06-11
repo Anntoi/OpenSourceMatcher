@@ -27,7 +27,7 @@ export default function DemoPage() {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-600">Erreur lors de l’appel à l’API.</p>
+        <p className="text-red-600">Erreur lors de l'appel à l'API.</p>
         <p className="text-sm text-slate-500">{error.message}</p>
       </div>
     );

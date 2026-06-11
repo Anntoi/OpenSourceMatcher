@@ -35,7 +35,7 @@ function NavLinks() {
         Recherche
       </Link>
       <Link to="/demo" className={linkClass}>
-        favoris
+        Démo
       </Link>
       {user ? (
         <>

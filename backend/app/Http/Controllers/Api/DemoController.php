@@ -15,3 +15,4 @@ class DemoController extends Controller
         ]);
     }
 }
+}
