@@ -9,6 +9,7 @@ on:
 jobs:
   build-backend:
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: backend
@@ -20,11 +21,11 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: "8.3"
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_pgsql
           coverage: none
 
-      - name: Install backend dependencies
+      - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Setup Laravel env
@@ -32,16 +33,14 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Check PHP syntax
-        run: composer run lint:check || true
-
       - name: Run tests
         run: php artisan test --no-coverage
-        continue-on-error: true
+
 
   build-frontend:
     runs-on: ubuntu-latest
     needs: build-backend
+
     defaults:
       run:
         working-directory: frontend
@@ -53,11 +52,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install frontend deps
+      - name: Install dependencies
         run: npm ci
 
       - name: Lint frontend
@@ -66,18 +65,19 @@ jobs:
       - name: Build frontend
         run: npm run build
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://opensourcematcher-api.onrender.com/api/v1' }}
+          VITE_API_URL: https://opensourcematcher-api.onrender.com/api/v1
 
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist
-          retention-days: 1
+
 
   deploy:
     runs-on: ubuntu-latest
     needs: build-frontend
+
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.ENABLE_DEPLOY == 'true'
 
     steps:
@@ -90,7 +90,21 @@ jobs:
           name: frontend-dist
           path: frontend/dist
 
-      - name: Deploy Vercel
+      - name: Check Vercel secrets
+        id: vercel_check
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to Vercel
+        if: steps.vercel_check.outputs.deploy == 'true'
         uses: amondnet/vercel-action@v20
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -98,25 +112,13 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: frontend
           args: --prod
-        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
 
-      - name: Verify Vercel deployment
+      - name: Trigger Render deploy
         run: |
-          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
-            echo "⚠️ WARNING: VERCEL_TOKEN not set - Vercel deployment skipped"
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
+          else
+            echo "Render deploy skipped"
           fi
-          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
-            echo "⚠️ WARNING: VERCEL_ORG_ID not set - Vercel deployment skipped"
-          fi
-          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
-            echo "⚠️ WARNING: VERCEL_PROJECT_ID not set - Vercel deployment skipped"
-          fi
-
-      - name: Trigger Render backend deploy
-        run: |
-          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
-            echo "⚠️ WARNING: RENDER_DEPLOY_HOOK not set - Render deployment skipped"
-            exit 0
-          fi
-          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
-        continue-on-error: true
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
