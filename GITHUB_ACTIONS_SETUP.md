@@ -108,7 +108,11 @@ git push origin main
 | "Frontend build fails" | Check VITE_API_URL is correct |
 
 ---
+ GitHub Actions / .github/workflows/ci-cd.yml
 
+Invalid workflow file
+
+(Line: 101, Col: 13): Unrecognized named-value: 'secrets'. Located at position 1 within expression: secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '
 ## 📝 SECRETS CONFIGURATION TEMPLATE
 
 ```yaml

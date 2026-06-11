@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-backend:
     runs-on: ubuntu-latest
@@ -90,6 +93,9 @@ jobs:
           name: frontend-dist
           path: frontend/dist
 
+      # =========================
+      # CHECK VERCEL SECRETS
+      # =========================
       - name: Check Vercel secrets
         id: vercel_check
         run: |
@@ -103,6 +109,9 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+      # =========================
+      # DEPLOY TO VERCEL (FIXED)
+      # =========================
       - name: Deploy to Vercel
         if: steps.vercel_check.outputs.deploy == 'true'
         uses: amondnet/vercel-action@v20
@@ -110,15 +119,23 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: frontend
-          args: --prod
+          vercel-args: "--prod"
 
-      - name: Trigger Render deploy
+      - name: Warn Vercel skipped
+        if: steps.vercel_check.outputs.deploy != 'true'
+        run: |
+          echo "⚠️ Vercel deployment skipped (missing secrets)"
+
+
+      # =========================
+      # RENDER BACKEND DEPLOY
+      # =========================
+      - name: Deploy backend to Render
         run: |
           if [ -n "$RENDER_DEPLOY_HOOK" ]; then
             curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
           else
-            echo "Render deploy skipped"
+            echo "⚠️ Render deploy skipped"
           fi
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
