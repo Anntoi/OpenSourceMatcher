@@ -109,7 +109,7 @@ class GitHubService
         for ($attempt = 0; $attempt < self::MAX_RETRIES; $attempt++) {
             try {
                 $response = $this->githubClient()->get("/repos/{$owner}/{$repo}/issues", [
-                    'state' => 'all',
+                    'state' => 'open',
                     'sort' => 'created',
                     'direction' => 'desc',
                     'page' => $page,
@@ -122,6 +122,7 @@ class GitHubService
 
                 $items = collect($payload ?? [])
                     ->filter(fn (array $issue) => ! isset($issue['pull_request']))
+                    ->filter(fn (array $issue) => $this->hasQualifyingLabel($issue))
                     ->map(fn (array $issue) => $this->formatRepositoryIssue($issue))
                     ->values()
                     ->all();
@@ -167,6 +168,72 @@ class GitHubService
             'created_at' => $issue['created_at'] ?? null,
             'html_url' => $issue['html_url'],
         ];
+    }
+
+    private function hasQualifyingLabel(array $issue): bool
+    {
+        $labels = collect($issue['labels'] ?? [])->map(fn (array $label) => str($label['name'])->lower()->toString())->values()->all();
+
+        $qualifyingLabels = [
+            'good first issue',
+            'help wanted',
+            'bug',
+            'documentation',
+        ];
+
+        return collect($labels)->intersect($qualifyingLabels)->isNotEmpty();
+    }
+
+    public function getPopularRepositories(): array
+    {
+        $cacheKey = 'github_popular_repos';
+
+        $cached = Cache::get($cacheKey);
+        if ($cached) {
+            return $cached;
+        }
+
+        $popularRepos = [
+            ['owner' => 'laravel', 'repo' => 'framework'],
+            ['owner' => 'facebook', 'repo' => 'react'],
+            ['owner' => 'microsoft', 'repo' => 'vscode'],
+            ['owner' => 'vercel', 'repo' => 'next.js'],
+            ['owner' => 'golang', 'repo' => 'go'],
+            ['owner' => 'python', 'repo' => 'cpython'],
+            ['owner' => 'torvalds', 'repo' => 'linux'],
+            ['owner' => 'kubernetes', 'repo' => 'kubernetes'],
+        ];
+
+        $repositories = [];
+
+        foreach ($popularRepos as $repo) {
+            try {
+                $response = $this->githubClient()->get("/repos/{$repo['owner']}/{$repo['repo']}", []);
+
+                $this->throwOnFailedResponse($response);
+
+                $data = $response->json();
+
+                $repositories[] = [
+                    'owner' => $repo['owner'],
+                    'repo' => $repo['repo'],
+                    'full_name' => $data['full_name'] ?? "{$repo['owner']}/{$repo['repo']}",
+                    'description' => $data['description'] ?? '',
+                    'open_issues_count' => (int) ($data['open_issues_count'] ?? 0),
+                    'stars' => (int) ($data['stargazers_count'] ?? 0),
+                    'language' => $data['language'] ?? '',
+                    'url' => $data['html_url'] ?? '',
+                    'avatar_url' => $data['owner']['avatar_url'] ?? '',
+                ];
+            } catch (\Exception $e) {
+                // Skip repository on error
+                continue;
+            }
+        }
+
+        Cache::put($cacheKey, $repositories, self::CACHE_TTL);
+
+        return $repositories;
     }
 
     private function githubClient()

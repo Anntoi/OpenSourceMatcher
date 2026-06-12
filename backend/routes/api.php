@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::get('/issues', [IssueController::class, 'index']);
+    Route::get('/popular-repositories', [IssueController::class, 'popularRepositories']);
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
     Route::get('/demo', [DemoController::class, '__invoke']);
     Route::get('/repositories/{owner}/{repo}/issues', [IssueController::class, 'repositoryIssues']);
