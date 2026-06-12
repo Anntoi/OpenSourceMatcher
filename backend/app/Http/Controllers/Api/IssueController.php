@@ -95,4 +95,19 @@ class IssueController extends Controller
             'data' => $repositories,
         ]);
     }
+
+    public function popularRepositoriesWithIssues(): JsonResponse
+    {
+        try {
+            $repositories = $this->gitHubService->getPopularRepositoriesWithIssues();
+        } catch (Throwable $exception) {
+            return response()->json([
+                'message' => 'Failed to fetch popular repositories with issues from GitHub.',
+            ], 502);
+        }
+
+        return response()->json([
+            'data' => $repositories,
+        ]);
+    }
 }

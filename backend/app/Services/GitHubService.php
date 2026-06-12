@@ -236,6 +236,43 @@ class GitHubService
         return $repositories;
     }
 
+    public function getPopularRepositoriesWithIssues(): array
+    {
+        $cacheKey = 'github_popular_repos_with_issues';
+
+        $cached = Cache::get($cacheKey);
+        if ($cached) {
+            return $cached;
+        }
+
+        $repositories = $this->getPopularRepositories();
+        $repositoriesWithIssues = [];
+
+        foreach ($repositories as $repo) {
+            try {
+                $issues = $this->getRepositoryIssues(
+                    $repo['owner'],
+                    $repo['repo'],
+                    page: 1,
+                    perPage: 3
+                );
+
+                $repositoriesWithIssues[] = array_merge($repo, [
+                    'issues' => $issues['items'],
+                ]);
+            } catch (\Exception $e) {
+                // Skip if we can't fetch issues
+                $repositoriesWithIssues[] = array_merge($repo, [
+                    'issues' => [],
+                ]);
+            }
+        }
+
+        Cache::put($cacheKey, $repositoriesWithIssues, self::CACHE_TTL);
+
+        return $repositoriesWithIssues;
+    }
+
     private function githubClient()
     {
         return Http::withHeaders([
