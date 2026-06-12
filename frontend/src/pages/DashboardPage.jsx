@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import FavoritesList from '../components/FavoritesList'
 import IssueCard from '../components/IssueCard'
+import { GITHUB_REPO_NAME, GITHUB_REPO_OWNER, repositoryIssuesPath } from '../config/github'
 import { useAuth } from '../context/AuthContext'
 import { useFavorites } from '../context/FavoritesContext'
 import { useIssueHistory } from '../hooks/useIssueHistory'
@@ -23,8 +24,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     api
-      .get('/issues', { params: { per_page: 5 } })
-      .then(({ data }) => setRecentIssues(data.data ?? []))
+      .get(repositoryIssuesPath(), { params: { per_page: 5 } })
+      .then(({ data }) => {
+        const items = (data.data ?? []).map((issue) => ({
+          ...issue,
+          repository: `${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}`,
+        }))
+        setRecentIssues(items)
+      })
       .catch(() => setRecentIssues([]))
       .finally(() => setLoadingIssues(false))
   }, [])
@@ -105,7 +112,7 @@ export default function DashboardPage() {
             ) : (
               <ul className="space-y-3">
                 {recentIssues.map((issue) => (
-                  <li key={issue.number}>
+                  <li key={issue.id ?? issue.number}>
                     <IssueCard issue={issue} />
                   </li>
                 ))}

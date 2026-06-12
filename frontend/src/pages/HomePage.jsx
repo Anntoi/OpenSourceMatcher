@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import IssueCard from '../components/IssueCard'
+import { GITHUB_REPO_NAME, GITHUB_REPO_OWNER, repositoryIssuesPath } from '../config/github'
 import { useFavorites } from '../context/FavoritesContext'
 import api from '../services/api'
 
@@ -15,9 +16,15 @@ export default function HomePage() {
     const controller = new AbortController()
 
     api
-      .get('/issues', { params: { per_page: 6 }, signal: controller.signal })
+      .get(repositoryIssuesPath(), { params: { per_page: 6 }, signal: controller.signal })
       .then(({ data }) => {
-        if (!cancelled) setIssues(data.data ?? [])
+        if (!cancelled) {
+          const items = (data.data ?? []).map((issue) => ({
+            ...issue,
+            repository: `${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}`,
+          }))
+          setIssues(items)
+        }
       })
       .catch((err) => {
         if (!cancelled && err.code !== 'ABORT_ERR') {
@@ -78,7 +85,7 @@ export default function HomePage() {
         {!loading && !error && (
           <ul className="space-y-3">
             {issues.map((issue) => (
-              <li key={issue.number}>
+              <li key={issue.id ?? issue.number}>
                 <IssueCard issue={issue} />
               </li>
             ))}

@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Http\Client\RequestException;
+use App\Exceptions\GitHubApiException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -24,29 +25,20 @@ class GitHubService
             $query .= ' language:'.$language;
         }
 
-        // Generate cache key based on query parameters
         $cacheKey = 'github_issues:'.hash('sha256', $query.$page.$perPage);
 
-        // Try to get from cache
         $cachedResult = Cache::get($cacheKey);
         if ($cachedResult) {
-            $items = $cachedResult['items'];
+            $items = collect($cachedResult['items']);
             $total = $cachedResult['total'];
         } else {
-            // Fetch from GitHub with retry logic
-            $items = [];
+            $items = collect();
             $total = 0;
             $lastException = null;
 
             for ($attempt = 0; $attempt < self::MAX_RETRIES; $attempt++) {
                 try {
-                    $response = Http::withHeaders([
-                        'Accept' => 'application/vnd.github+json',
-                        'X-GitHub-Api-Version' => '2022-11-28',
-                    ])->when(
-                        config('services.github.token'),
-                        fn ($client) => $client->withToken(config('services.github.token'))
-                    )->timeout(self::TIMEOUT)->get('https://api.github.com/search/issues', [
+                    $response = $this->githubClient()->get('/search/issues', [
                         'q' => $query,
                         'sort' => 'created',
                         'order' => 'desc',
@@ -54,7 +46,7 @@ class GitHubService
                         'per_page' => min($perPage, 30),
                     ]);
 
-                    throw_if($response->failed(), RequestException::class, $response);
+                    $this->throwOnFailedResponse($response);
 
                     $payload = $response->json();
                     $items = collect($payload['items'] ?? [])->map(function (array $item) {
@@ -69,12 +61,11 @@ class GitHubService
                             'difficulty' => $this->resolveDifficulty($labels),
                             'created_at' => $item['created_at'] ?? null,
                         ];
-                    })->all();
+                    });
                     $total = (int) ($payload['total_count'] ?? $items->count());
 
-                    // Cache the result
                     Cache::put($cacheKey, [
-                        'items' => $items,
+                        'items' => $items->all(),
                         'total' => $total,
                     ], self::CACHE_TTL);
 
@@ -82,13 +73,12 @@ class GitHubService
                 } catch (\Exception $e) {
                     $lastException = $e;
                     if ($attempt < self::MAX_RETRIES - 1) {
-                        // Exponential backoff: 1s, 2s, 4s
                         sleep(2 ** $attempt);
                     }
                 }
             }
 
-            if ($lastException && empty($items)) {
+            if ($lastException && $items->isEmpty()) {
                 throw $lastException;
             }
         }
@@ -98,76 +88,57 @@ class GitHubService
         }
 
         return new LengthAwarePaginator(
-            items: $items,
+            items: $items->all(),
             total: $total,
             perPage: min($perPage, 30),
             currentPage: $page
         );
     }
 
-    public function getRepositoryIssues(?string $owner = null, ?string $repo = null, int $page = 1, int $perPage = 30): array
+    public function getRepositoryIssues(string $owner, string $repo, int $page = 1, int $perPage = 30): array
     {
-        // Use default values from config if not provided
-        if ($owner === null) {
-            $owner = config('services.github.repo_owner', 'opensourcematcher');
-        }
-        if ($repo === null) {
-            $repo = config('services.github.repo_name', 'OpenSourceMatcher');
+        $cacheKey = "github_repo_issues:{$owner}:{$repo}:{$page}:".min($perPage, 100);
+
+        $cached = Cache::get($cacheKey);
+        if ($cached) {
+            return $cached;
         }
 
         $lastException = null;
 
         for ($attempt = 0; $attempt < self::MAX_RETRIES; $attempt++) {
             try {
-                $response = Http::withHeaders([
-                    'Accept' => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                ])->when(
-                    config('services.github.token'),
-                    fn ($client) => $client->withToken(config('services.github.token'))
-                )->timeout(self::TIMEOUT)->get("https://api.github.com/repos/{$owner}/{$repo}/issues", [
-                    'state' => 'open',
+                $response = $this->githubClient()->get("/repos/{$owner}/{$repo}/issues", [
+                    'state' => 'all',
                     'sort' => 'created',
-                    'order' => 'desc',
+                    'direction' => 'desc',
                     'page' => $page,
-                    'per_page' => min($perPage, 100), // GitHub allows max 100 per page
+                    'per_page' => min($perPage, 100),
                 ]);
 
-                if ($response->failed()) {
-                    if ($response->status() === 404) {
-                        throw new \Exception("Repository not found", 404);
-                    }
-                    throw new \Exception("GitHub API error: {$response->status()}", $response->status());
-                }
+                $this->throwOnFailedResponse($response);
 
                 $payload = $response->json();
 
-                $items = collect($payload ?? [])->map(function (array $issue) {
-                    return [
-                        'id' => (int) $issue['id'],
-                        'title' => $issue['title'],
-                        'state' => $issue['state'],
-                        'labels' => collect($issue['labels'] ?? [])->map(fn (array $label) => $label['name'])->values()->all(),
-                        'author' => [
-                            'login' => $issue['user']['login'] ?? '',
-                            'avatar_url' => $issue['user']['avatar_url'] ?? '',
-                        ],
-                        'comments_count' => (int) $issue['comments'],
-                        'created_at' => $issue['created_at'] ?? null,
-                        'html_url' => $issue['html_url'],
-                    ];
-                })->all();
+                $items = collect($payload ?? [])
+                    ->filter(fn (array $issue) => ! isset($issue['pull_request']))
+                    ->map(fn (array $issue) => $this->formatRepositoryIssue($issue))
+                    ->values()
+                    ->all();
 
-                return [
+                $result = [
                     'items' => $items,
-                    'total_count' => count($items), // Note: GitHub doesn't provide total count for this endpoint without pagination headers
-                    // For simplicity, we're returning the count of items on this page
-                    // In a real implementation, we'd parse the Link header for total count
+                    'total_count' => count($items),
                 ];
+
+                Cache::put($cacheKey, $result, self::CACHE_TTL);
+
+                return $result;
+            } catch (GitHubApiException $e) {
+                throw $e;
             } catch (\Exception $e) {
                 $lastException = $e;
                 if ($attempt < self::MAX_RETRIES - 1) {
-                    // Exponential backoff: 1s, 2s, 4s
                     sleep(2 ** $attempt);
                 }
             }
@@ -178,6 +149,69 @@ class GitHubService
         }
 
         return ['items' => [], 'total_count' => 0];
+    }
+
+    private function formatRepositoryIssue(array $issue): array
+    {
+        return [
+            'id' => (int) $issue['id'],
+            'number' => (int) $issue['number'],
+            'title' => $issue['title'],
+            'state' => $issue['state'],
+            'labels' => collect($issue['labels'] ?? [])->map(fn (array $label) => $label['name'])->values()->all(),
+            'author' => [
+                'login' => $issue['user']['login'] ?? '',
+                'avatar_url' => $issue['user']['avatar_url'] ?? '',
+            ],
+            'comments_count' => (int) ($issue['comments'] ?? 0),
+            'created_at' => $issue['created_at'] ?? null,
+            'html_url' => $issue['html_url'],
+        ];
+    }
+
+    private function githubClient()
+    {
+        return Http::withHeaders([
+            'Accept' => 'application/vnd.github+json',
+            'X-GitHub-Api-Version' => '2022-11-28',
+        ])->when(
+            config('services.github.token'),
+            fn ($client) => $client->withToken(config('services.github.token'))
+        )->timeout(self::TIMEOUT)->baseUrl(rtrim(config('services.github.api_url', 'https://api.github.com'), '/'));
+    }
+
+    private function throwOnFailedResponse(Response $response): void
+    {
+        if (! $response->failed()) {
+            return;
+        }
+
+        if ($response->status() === 404) {
+            throw GitHubApiException::repositoryNotFound();
+        }
+
+        if ($response->status() === 403 && $this->isRateLimitExceeded($response)) {
+            throw GitHubApiException::rateLimitExceeded();
+        }
+
+        if ($response->status() === 429) {
+            throw GitHubApiException::rateLimitExceeded();
+        }
+
+        throw GitHubApiException::apiError($response->status());
+    }
+
+    private function isRateLimitExceeded(Response $response): bool
+    {
+        $remaining = $response->header('X-RateLimit-Remaining');
+        if ($remaining !== null && (int) $remaining === 0) {
+            return true;
+        }
+
+        $body = $response->json();
+        $message = is_array($body) ? ($body['message'] ?? '') : '';
+
+        return str_contains(strtolower($message), 'rate limit');
     }
 
     private function resolveDifficulty(array $labels): string
