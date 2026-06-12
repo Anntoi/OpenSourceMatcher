@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import IssueCard from '../components/IssueCard'
 import RepositorySelectorCard from '../components/RepositorySelectorCard'
 import { repositoryIssuesPath } from '../config/github'
@@ -43,12 +43,19 @@ export default function IssuesExplorerPage() {
     loadPopularRepos()
   }, [])
 
-  // Load issues when repository is selected
-  useEffect(() => {
+  // Reset state when repository changes
+  useLayoutEffect(() => {
     if (!selectedRepository) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIssues([])
       setMeta(null)
       setLoading(false)
+    }
+  }, [selectedRepository])
+
+  // Load issues when repository or page changes
+  useEffect(() => {
+    if (!selectedRepository) {
       return
     }
 
