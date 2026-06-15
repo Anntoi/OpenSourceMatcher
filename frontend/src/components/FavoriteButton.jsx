@@ -50,13 +50,13 @@ export default function FavoriteButton({ issue, size = 'md', showLabel = false }
       title={active ? 'Retirer des favoris' : 'Ajouter aux favoris'}
       aria-label={active ? 'Retirer des favoris' : 'Ajouter aux favoris'}
       aria-pressed={active}
-      className={`inline-flex items-center justify-center gap-1 rounded-full border transition disabled:opacity-50 ${
+      className={`inline-flex items-center justify-center gap-1 rounded-full border transition-all duration-300 disabled:opacity-50 hover:-translate-y-0.5 hover:shadow-soft ${
         active
-          ? 'border-amber-400 bg-amber-50 text-amber-500 shadow-sm'
+          ? 'border-amber-400 bg-amber-50 text-amber-500 shadow-sm scale-105'
           : 'border-slate-200 bg-white text-slate-400 hover:border-amber-300 hover:text-amber-500'
       } ${showLabel ? 'px-3 py-1.5' : sizeClasses[size]}`}
     >
-      <span className={active ? 'scale-110' : ''}>{active ? '★' : '☆'}</span>
+      <span className={`transition-transform duration-300 ${active ? 'scale-110' : ''}`}>{active ? '★' : '☆'}</span>
       {showLabel && (
         <span className="text-xs font-medium">{active ? 'Favori' : 'Favoris'}</span>
       )}

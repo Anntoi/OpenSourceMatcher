@@ -25,7 +25,7 @@ function NavLinks() {
   const { user } = useAuth()
   const { favorites } = useFavorites()
 
-  const linkClass = 'text-slate-700 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded px-2 py-1 transition-colors'
+  const linkClass = 'text-slate-700 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded px-2 py-1 transition-all duration-200 hover:-translate-y-0.5'
 
   return (
     <>
@@ -50,7 +50,7 @@ function NavLinks() {
           >
             Favoris
             {favorites.length > 0 && (
-              <span className="rounded-full bg-warning-100 px-1.5 text-xs font-semibold text-warning-700" aria-label={`${favorites.length} favoris`}>
+              <span className="rounded-full bg-warning-100 px-1.5 text-xs font-semibold text-warning-700 animate-scale-in" aria-label={`${favorites.length} favoris`}>
                 {favorites.length}
               </span>
             )}
@@ -60,7 +60,7 @@ function NavLinks() {
           </Link>
           {user.is_admin && (
             <div className="border-l border-slate-200 pl-4 ml-2" role="separator" aria-orientation="vertical">
-              <Link to="/admin" className="text-danger-600 hover:text-danger-700 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-danger-500 focus:ring-offset-2 rounded px-2 py-1 transition-colors">
+              <Link to="/admin" className="text-danger-600 hover:text-danger-700 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-danger-500 focus:ring-offset-2 rounded px-2 py-1 transition-all duration-200 hover:-translate-y-0.5">
                 ⚙️ Admin
               </Link>
             </div>

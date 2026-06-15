@@ -29,7 +29,7 @@ export default function IssueCard({ issue: rawIssue, showFavorite = true }) {
 
   return (
     <article 
-      className="flex gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2"
+      className="flex gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:border-slate-300 hover:shadow-md hover:shadow-soft hover:-translate-y-1 animate-fade-in focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2"
       role="article"
       aria-labelledby={`issue-title-${issue.number}`}
     >

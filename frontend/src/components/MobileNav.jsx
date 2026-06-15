@@ -56,7 +56,7 @@ export default function MobileNav({ user, favorites }) {
       {/* Mobile menu */}
       {isOpen && (
         <div
-          className="mt-2 space-y-1 pb-3 border-b border-slate-200"
+          className="mt-2 space-y-1 pb-3 border-b border-slate-200 animate-slide-down"
           id="mobile-menu"
           role="menu"
         >
