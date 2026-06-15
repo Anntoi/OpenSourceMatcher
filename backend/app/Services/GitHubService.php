@@ -15,11 +15,15 @@ class GitHubService
     private const TIMEOUT = 10; // seconds
     private const MAX_RETRIES = 3;
 
-    public function searchIssues(int $page = 1, int $perPage = 10, ?string $difficulty = null, ?string $language = null): LengthAwarePaginator
+    public function searchIssues(int $page = 1, int $perPage = 10, ?string $difficulty = null, ?string $language = null, ?string $repo = null): LengthAwarePaginator
     {
-        $repoOwner = config('services.github.repo_owner', 'opensourcematcher');
-        $repoName = config('services.github.repo_name', 'OpenSourceMatcher');
-        $query = "repo:{$repoOwner}/{$repoName} is:issue is:open archived:false (label:\"good first issue\" OR label:\"help wanted\")";
+        if ($repo) {
+            // Search within a specific repository
+            $query = "repo:{$repo} is:issue is:open archived:false (label:\"good first issue\" OR label:\"help wanted\")";
+        } else {
+            // Search across all of GitHub
+            $query = "is:issue is:open archived:false (label:\"good first issue\" OR label:\"help wanted\")";
+        }
 
         if ($language) {
             $query .= ' language:'.$language;
@@ -43,7 +47,7 @@ class GitHubService
                         'sort' => 'created',
                         'order' => 'desc',
                         'page' => $page,
-                        'per_page' => min($perPage, 30),
+                        'per_page' => min($perPage, 100),
                     ]);
 
                     $this->throwOnFailedResponse($response);

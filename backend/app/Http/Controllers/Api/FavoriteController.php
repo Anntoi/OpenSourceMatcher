@@ -31,20 +31,6 @@ class FavoriteController extends Controller
             'difficulty' => ['required', 'in:beginner,intermediate,all-levels'],
         ]);
 
-        // Ensure issue exists (or will be created via GitHub API)
-        Issue::query()->updateOrCreate(
-            [
-                'repository' => $validated['repository'],
-                'number' => $validated['issue_number'],
-            ],
-            [
-                'title' => $validated['title'],
-                'url' => $validated['url'],
-                'labels' => $validated['labels'] ?? [],
-                'difficulty' => $validated['difficulty'],
-            ]
-        );
-
         $favorite = Favorite::query()->updateOrCreate(
             [
                 'user_id' => $request->user()->id,
@@ -65,4 +51,3 @@ class FavoriteController extends Controller
         return response()->json(['message' => 'Favorite removed.']);
     }
 }
-

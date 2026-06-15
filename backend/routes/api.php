@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DemoController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\IssueController;
+use App\Http\Controllers\Api\IssueViewController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\MetricsController;
 use App\Http\Controllers\Api\DevOps\DashboardController as DevOpsDashboardController;
 use App\Http\Controllers\Api\DevOps\HealthController;
 use App\Http\Controllers\Api\DevOps\PipelineController;
@@ -19,6 +21,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
     Route::get('/demo', [DemoController::class, '__invoke']);
     Route::get('/repositories/{owner}/{repo}/issues', [IssueController::class, 'repositoryIssues']);
+    
+    // Metrics endpoint for Prometheus
+    Route::get('/metrics', [MetricsController::class, 'index']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
@@ -29,6 +34,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('/favorites/{issueNumber}', [FavoriteController::class, 'destroy']);
 
         Route::put('/profile', [ProfileController::class, 'update']);
+
+        Route::get('/history', [IssueViewController::class, 'index']);
+        Route::post('/history', [IssueViewController::class, 'store']);
+        Route::delete('/history/{issueNumber}', [IssueViewController::class, 'destroy']);
+        Route::delete('/history', [IssueViewController::class, 'clear']);
 
         // DevOps Routes (Admin only)
         Route::middleware('admin')->prefix('devops')->group(function () {

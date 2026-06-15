@@ -1,0 +1,122 @@
+groups:
+  - name: laravel_alerts
+    interval: 30s
+    rules:
+      # Alertes CPU
+      - alert: HighCPUUsage
+        expr: process_cpu_usage * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: laravel
+        annotations:
+          summary: "CPU usage élevé"
+          description: "L'utilisation CPU est supérieure à 80% depuis 5 minutes (valeur actuelle: {{ $value }}%)"
+
+      - alert: CriticalCPUUsage
+        expr: process_cpu_usage * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: laravel
+        annotations:
+          summary: "CPU usage critique"
+          description: "L'utilisation CPU est supérieure à 90% depuis 2 minutes (valeur actuelle: {{ $value }}%)"
+
+      # Alertes Mémoire
+      - alert: HighMemoryUsage
+        expr: (process_memory_usage_bytes / 1024 / 1024 / 1024) > 12
+        for: 5m
+        labels:
+          severity: warning
+          service: laravel
+        annotations:
+          summary: "Utilisation mémoire élevée"
+          description: "L'utilisation mémoire est supérieure à 12GB depuis 5 minutes (valeur actuelle: {{ $value }}GB)"
+
+      - alert: CriticalMemoryUsage
+        expr: (process_memory_usage_bytes / 1024 / 1024 / 1024) > 14
+        for: 2m
+        labels:
+          severity: critical
+          service: laravel
+        annotations:
+          summary: "Utilisation mémoire critique"
+          description: "L'utilisation mémoire est supérieure à 14GB depuis 2 minutes (valeur actuelle: {{ $value }}GB)"
+
+      # Alertes Temps de réponse
+      - alert: HighResponseTime
+        expr: (rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: laravel
+        annotations:
+          summary: "Temps de réponse élevé"
+          description: "Le temps de réponse moyen est supérieur à 1s depuis 5 minutes (valeur actuelle: {{ $value }}s)"
+
+      - alert: CriticalResponseTime
+        expr: (rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])) > 2
+        for: 2m
+        labels:
+          severity: critical
+          service: laravel
+        annotations:
+          summary: "Temps de réponse critique"
+          description: "Le temps de réponse moyen est supérieur à 2s depuis 2 minutes (valeur actuelle: {{ $value }}s)"
+
+      # Alertes Base de données
+      - alert: HighDatabaseConnections
+        expr: database_connections_active > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: laravel
+        annotations:
+          summary: "Nombre élevé de connexions DB"
+          description: "Le nombre de connexions DB actives est supérieur à 80 depuis 5 minutes (valeur actuelle: {{ $value }})"
+
+      - alert: CriticalDatabaseConnections
+        expr: database_connections_active > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: laravel
+        annotations:
+          summary: "Nombre critique de connexions DB"
+          description: "Le nombre de connexions DB actives est supérieur à 90 depuis 2 minutes (valeur actuelle: {{ $value }})"
+
+      # Alertes Service Down
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: laravel
+        annotations:
+          summary: "Service indisponible"
+          description: "Le service {{ $labels.job }} est indisponible depuis 1 minute"
+
+  - name: system_alerts
+    interval: 30s
+    rules:
+      # Alertes Disque (si node exporter est disponible)
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Utilisation disque élevée"
+          description: "L'utilisation disque est supérieure à 80% depuis 5 minutes (valeur actuelle: {{ $value }}%)"
+
+      - alert: CriticalDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Utilisation disque critique"
+          description: "L'utilisation disque est supérieure à 90% depuis 2 minutes (valeur actuelle: {{ $value }}%)"

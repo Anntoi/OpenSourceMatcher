@@ -19,9 +19,10 @@ class IssueController extends Controller
     {
         $validated = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:30'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'difficulty' => ['nullable', 'in:beginner,intermediate,all-levels'],
             'language' => ['nullable', 'string', 'max:30'],
+            'repo' => ['nullable', 'string', 'max:255'],
         ]);
 
         try {
@@ -29,7 +30,8 @@ class IssueController extends Controller
                 page: $validated['page'] ?? 1,
                 perPage: $validated['per_page'] ?? 10,
                 difficulty: $validated['difficulty'] ?? null,
-                language: $validated['language'] ?? null
+                language: $validated['language'] ?? null,
+                repo: $validated['repo'] ?? null
             );
         } catch (Throwable $exception) {
             return response()->json([

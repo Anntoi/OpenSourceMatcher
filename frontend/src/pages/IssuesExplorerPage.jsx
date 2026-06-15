@@ -18,6 +18,7 @@ function getErrorMessage(err) {
 export default function IssuesExplorerPage() {
   const [selectedRepository, setSelectedRepository] = useState(null)
   const [customRepo, setCustomRepo] = useState('')
+  const [globalQuery, setGlobalQuery] = useState('')
   const [popularRepositories, setPopularRepositories] = useState([])
   const [loadingRepos, setLoadingRepos] = useState(true)
   const [issues, setIssues] = useState([])
@@ -25,6 +26,7 @@ export default function IssuesExplorerPage() {
   const [error, setError] = useState(null)
   const [page, setPage] = useState(1)
   const [meta, setMeta] = useState(null)
+  const [searchMode, setSearchMode] = useState('popular') // 'popular' | 'repo' | 'global'
 
   // Load popular repositories on mount
   useEffect(() => {
@@ -45,17 +47,17 @@ export default function IssuesExplorerPage() {
 
   // Reset state when repository changes
   useLayoutEffect(() => {
-    if (!selectedRepository) {
+    if (!selectedRepository && searchMode !== 'global') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIssues([])
       setMeta(null)
       setLoading(false)
     }
-  }, [selectedRepository])
+  }, [selectedRepository, searchMode])
 
-  // Load issues when repository or page changes
+  // Load issues when repository, global search, or page changes
   useEffect(() => {
-    if (!selectedRepository) {
+    if (!selectedRepository && searchMode !== 'global') {
       return
     }
 
@@ -67,18 +69,34 @@ export default function IssuesExplorerPage() {
       setError(null)
 
       try {
-        const { data } = await api.get(
-          repositoryIssuesPath(selectedRepository.owner, selectedRepository.repo),
-          {
-            params: { page, per_page: 30 },
+        let response
+
+        if (searchMode === 'global') {
+          // Search across all GitHub or within a specific repo
+          response = await api.get('/issues', {
+            params: {
+              page,
+              per_page: 30,
+              repo: globalQuery.trim() || undefined,
+            },
             signal: controller.signal,
-          }
-        )
+          })
+        } else {
+          // Load issues for a specific repository
+          response = await api.get(
+            repositoryIssuesPath(selectedRepository.owner, selectedRepository.repo),
+            {
+              params: { page, per_page: 30 },
+              signal: controller.signal,
+            }
+          )
+        }
 
         if (!cancelled) {
+          const { data } = response
           const items = (data.data ?? []).map((issue) => ({
             ...issue,
-            repository: `${selectedRepository.owner}/${selectedRepository.repo}`,
+            repository: issue.repository || `${selectedRepository?.owner ?? ''}/${selectedRepository?.repo ?? ''}`,
           }))
           setIssues(items)
           setMeta({
@@ -103,11 +121,13 @@ export default function IssuesExplorerPage() {
       cancelled = true
       controller.abort()
     }
-  }, [selectedRepository, page])
+  }, [selectedRepository, searchMode, globalQuery, page])
 
   const handleSelectRepository = (repo) => {
     setSelectedRepository(repo)
+    setSearchMode('repo')
     setPage(1)
+    setError(null)
   }
 
   const handleCustomRepository = (e) => {
@@ -122,8 +142,28 @@ export default function IssuesExplorerPage() {
 
     const [owner, repo] = parts
     setSelectedRepository({ owner, repo })
+    setSearchMode('repo')
     setCustomRepo('')
     setPage(1)
+    setError(null)
+  }
+
+  const handleGlobalSearch = (e) => {
+    e.preventDefault()
+    setSearchMode('global')
+    setSelectedRepository(null)
+    setPage(1)
+    setError(null)
+  }
+
+  const handleBackToPopular = () => {
+    setSearchMode('popular')
+    setSelectedRepository(null)
+    setGlobalQuery('')
+    setIssues([])
+    setMeta(null)
+    setPage(1)
+    setError(null)
   }
 
   return (
@@ -131,29 +171,49 @@ export default function IssuesExplorerPage() {
       <header>
         <h1 className="text-2xl font-bold text-slate-900">Explorateur d'Issues GitHub</h1>
         <p className="mt-1 text-slate-600">
-          Sélectionnez un dépôt pour charger ses issues dynamiquement.
+          Sélectionnez un dépôt ou recherchez sur tout GitHub pour trouver des issues.
         </p>
       </header>
 
-      {/* Custom repository input */}
-      <form onSubmit={handleCustomRepository} className="flex gap-2">
-        <input
-          type="text"
-          value={customRepo}
-          onChange={(e) => setCustomRepo(e.target.value)}
-          placeholder="Ou saisissez owner/repo"
-          className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-        />
-        <button
-          type="submit"
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          Charger
-        </button>
-      </form>
+      {/* Search mode: repo input + global search */}
+      <div className="flex flex-col gap-3">
+        {/* Custom repository input */}
+        <form onSubmit={handleCustomRepository} className="flex gap-2">
+          <input
+            type="text"
+            value={customRepo}
+            onChange={(e) => setCustomRepo(e.target.value)}
+            placeholder="Ou saisissez owner/repo (ex: laravel/framework)"
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            Charger
+          </button>
+        </form>
 
-      {/* Popular repositories */}
-      {!selectedRepository && (
+        {/* Global search across all GitHub */}
+        <form onSubmit={handleGlobalSearch} className="flex gap-2">
+          <input
+            type="text"
+            value={globalQuery}
+            onChange={(e) => setGlobalQuery(e.target.value)}
+            placeholder="Rechercher sur tout GitHub (laisser vide pour tout GitHub, ou entrer owner/repo)"
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            Recherche globale
+          </button>
+        </form>
+      </div>
+
+      {/* Popular repositories (only when no search is active) */}
+      {searchMode === 'popular' && (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-slate-900">Dépôts populaires</h2>
           {loadingRepos ? (
@@ -178,25 +238,28 @@ export default function IssuesExplorerPage() {
         </div>
       )}
 
-      {/* Selected repository and issues */}
-      {selectedRepository && (
+      {/* Active search results */}
+      {(searchMode === 'repo' || searchMode === 'global') && (
         <>
           <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                {selectedRepository.owner}/{selectedRepository.repo}
+                {searchMode === 'global'
+                  ? `Recherche globale${globalQuery.trim() ? ` : ${globalQuery.trim()}` : ''}`
+                  : `${selectedRepository.owner}/${selectedRepository.repo}`}
               </h2>
-              <p className="text-sm text-slate-600">Affichage des issues ouvertes</p>
+              <p className="text-sm text-slate-600">
+                {searchMode === 'global'
+                  ? 'Issues « good first issue » et « help wanted » sur tout GitHub'
+                  : 'Affichage des issues ouvertes'}
+              </p>
             </div>
             <button
               type="button"
-              onClick={() => {
-                setSelectedRepository(null)
-                setPage(1)
-              }}
+              onClick={handleBackToPopular}
               className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
             >
-              Changer
+              Retour
             </button>
           </div>
 
@@ -214,7 +277,7 @@ export default function IssuesExplorerPage() {
           {!loading && !error && (
             <>
               {issues.length === 0 ? (
-                <p className="text-slate-600">Aucune issue trouvée pour ce dépôt.</p>
+                <p className="text-slate-600">Aucune issue trouvée.</p>
               ) : (
                 <ul className="space-y-3">
                   {issues.map((issue) => (
