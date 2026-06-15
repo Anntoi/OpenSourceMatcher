@@ -8,17 +8,30 @@ Ce document décrit les améliorations apportées au projet OpenSource Matcher.
 - **Couleurs personnalisées**: Palette de couleurs unifiée (primary, secondary, success, warning, danger, dark)
 - **Typographie**: Police Inter pour le texte, JetBrains Mono pour le code
 - **Taille des polices**: Échelle cohérente de tailles pour tous les éléments
-- **Animations**: Animations CSS personnalisées (fade-in, slide-up, slide-down, scale-in)
+- **Animations CSS**: Animations personnalisées (fade-in, slide-up, slide-down, scale-in)
 - **Shadows**: Ombres douces et cohérentes (soft, medium, large)
 
-### 2. Accessibilité (WCAG 2.1 AA)
+### 2. Animations Fluides
+- **Keyframes personnalisées**: fadeIn, slideUp, slideDown, scaleIn dans Tailwind
+- **Transitions fluides**: Hover effects avec transform et shadow
+- **Animations séquentielles**: Délais d'animation pour l'apparition progressive
+- **Feedback visuel**: Boutons et cartes avec animations de survol
+- **Composants animés**:
+  - IssueCard: fade-in + hover elevation
+  - HomePage: slide-up hero + delayed content
+  - MobileNav: slide-down menu
+  - FavoriteButton: scale effects + transform
+  - Navigation: hover lift effects
+  - Badges: scale-in animation
+
+### 3. Accessibilité (WCAG 2.1 AA)
 - **Attributs ARIA**: Ajout de rôles et labels sémantiques sur tous les composants
 - **Navigation clavier**: Focus visible sur tous les éléments interactifs
 - **Contraste**: Amélioration du contraste des couleurs pour respecter les normes WCAG
 - **Labels descriptifs**: Textes alternatifs pour les images et liens
 - **Structure sémantique**: Utilisation correcte des balises HTML5
 
-### 3. Responsive Design
+### 4. Responsive Design
 - **Navigation mobile**: Menu hamburger pour les petits écrans
 - **Grilles adaptatives**: Layout qui s'adapte à toutes les tailles d'écran
 - **Typographie responsive**: Tailles de police adaptées au device
@@ -127,7 +140,7 @@ GRAFANA_API_KEY=<optionnel pour l'automation>
 ## 🎯 Prochaines Étapes
 
 ### Interface
-- [ ] Installer et configurer Framer Motion pour les animations
+- [x] Installer et configurer Framer Motion pour les animations (remplacé par animations CSS natives)
 - [ ] Thème sombre/clair
 - [ ] Notifications toast
 - [ ] Mode focus pour lecture
