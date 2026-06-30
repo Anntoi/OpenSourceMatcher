@@ -21,7 +21,7 @@ function writeLocalHistory(items) {
 export function useIssueHistory() {
   const { user } = useAuth()
   const isLoggedIn = Boolean(user)
-  
+
   // Initialize history from localStorage for non-logged-in users
   const [history, setHistory] = useState(() => {
     if (!isLoggedIn) {
@@ -29,8 +29,8 @@ export function useIssueHistory() {
     }
     return []
   })
-  
-  const [loading, setLoading] = useState(() => !isLoggedIn)
+
+  const [loading, setLoading] = useState(() => isLoggedIn)
 
   // Load history from server for logged-in users
   useEffect(() => {
@@ -39,7 +39,6 @@ export function useIssueHistory() {
     }
 
     let cancelled = false
-    setLoading(true)
 
     api
       .get('/history', { params: { per_page: 50 } })
