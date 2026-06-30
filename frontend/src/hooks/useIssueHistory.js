@@ -30,12 +30,11 @@ export function useIssueHistory() {
     return []
   })
   
-  const [loading, setLoading] = useState(!isLoggedIn)
+  const [loading, setLoading] = useState(() => !isLoggedIn)
 
   // Load history from server for logged-in users
   useEffect(() => {
     if (!isLoggedIn) {
-      setLoading(false)
       return
     }
 
