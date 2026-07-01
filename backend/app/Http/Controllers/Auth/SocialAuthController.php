@@ -18,9 +18,19 @@ class SocialAuthController extends Controller
     {
         $this->ensureValidProvider($provider);
 
-        return Socialite::driver($provider)
-            ->stateless()
-            ->redirect();
+        try {
+            return Socialite::driver($provider)
+                ->stateless()
+                ->redirect();
+        } catch (\Throwable $exception) {
+            Log::error('OAuth redirect failed', [
+                'provider' => $provider,
+                'message' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            throw $exception;
+        }
     }
 
     public function callback(string $provider): RedirectResponse
