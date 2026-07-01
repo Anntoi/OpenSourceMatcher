@@ -20,7 +20,6 @@ services:
       - "8000"
     depends_on:
       - postgres
-      - prometheus
 
   frontend:
     build: ./frontend
@@ -44,8 +43,6 @@ services:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./docker/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
       - prometheus_data:/prometheus
-    depends_on:
-      - backend
 
   # Grafana for metrics visualization
   grafana:
