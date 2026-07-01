@@ -19,9 +19,12 @@ class SocialAuthController extends Controller
         $this->ensureValidProvider($provider);
 
         try {
-            return Socialite::driver($provider)
+            Log::info('OAuth redirect attempt', ['provider' => $provider]);
+            $redirect = Socialite::driver($provider)
                 ->stateless()
                 ->redirect();
+            Log::info('OAuth redirect success', ['provider' => $provider]);
+            return $redirect;
         } catch (\Throwable $exception) {
             Log::error('OAuth redirect failed', [
                 'provider' => $provider,
@@ -37,12 +40,16 @@ class SocialAuthController extends Controller
     {
         $this->ensureValidProvider($provider);
 
+        Log::info('OAuth callback attempt', ['provider' => $provider]);
+
         try {
             $socialUser = Socialite::driver($provider)->stateless()->user();
+            Log::info('OAuth user retrieved', ['provider' => $provider, 'email' => $socialUser->getEmail()]);
         } catch (\Throwable $exception) {
-            Log::warning('OAuth callback failed', [
+            Log::error('OAuth callback failed', [
                 'provider' => $provider,
                 'message' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
             ]);
 
             return $this->redirectToFrontend(['error' => 'oauth_failed']);
