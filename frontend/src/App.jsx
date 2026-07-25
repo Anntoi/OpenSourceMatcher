@@ -36,15 +36,15 @@ function NavLinks() {
         Recherche
       </Link>
       <Link to="/demo" className={linkClass} aria-label="Page de démonstration">
-        Démo
+
       </Link>
       {user ? (
         <>
           <Link to="/dashboard" className={linkClass} aria-label="Tableau de bord personnel">
             Tableau de bord
           </Link>
-          <Link 
-            to="/favorites" 
+          <Link
+            to="/favorites"
             className={`${linkClass} inline-flex items-center gap-1`}
             aria-label={`Mes favoris (${favorites.length} favoris)`}
           >
@@ -83,25 +83,25 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <nav 
+      <nav
         className="border-b border-slate-200 bg-white px-4 md:px-6 py-4 shadow-sm"
         role="navigation"
         aria-label="Navigation principale"
       >
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="text-lg font-bold text-primary-600 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded px-2 py-1 transition-colors"
             aria-label="OpenSource Matcher - Retour à l'accueil"
           >
             OpenSource Matcher
           </Link>
-          
+
           {/* Desktop navigation */}
           <div className="hidden md:flex flex-wrap items-center gap-5 text-sm font-medium" role="menubar">
             <NavLinks />
           </div>
-          
+
           {/* Mobile navigation */}
           <MobileNav user={user} favorites={favorites} />
         </div>
