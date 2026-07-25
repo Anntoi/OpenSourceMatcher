@@ -36,7 +36,7 @@ function NavLinks() {
         Recherche
       </Link>
       <Link to="/demo" className={linkClass} aria-label="Page de démonstration">
-
+        A propos
       </Link>
       {user ? (
         <>

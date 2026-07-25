@@ -37,7 +37,7 @@ export default function DemoPage() {
     <div className="max-w-4xl mx-auto py-8 px-4">
       {response && response.success ? (
         <div className="rounded-lg border border-green-200 bg-green-50 p-8 text-left text-green-900 shadow-sm">
-          <h1 className="text-3xl font-bold mb-4">🚀 OpenSourceMatcher</h1>
+          <h1 className="text-3xl font-bold mb-4"> OpenSourceMatcher</h1>
 
           <p className="mb-4 text-lg">
             OpenSourceMatcher est une plateforme conçue pour aider les
@@ -65,7 +65,7 @@ export default function DemoPage() {
               <li>🏷️ Identification des issues « good first issue ».</li>
               <li>🤝 Facilitation de la contribution collaborative.</li>
               <li>📈 Suivi des opportunités de participation.</li>
-              <li>⚙️ Déploiement automatisé via CI/CD.</li>
+
             </ul>
           </div>
 
@@ -89,10 +89,10 @@ export default function DemoPage() {
             </p>
 
             <ul className="list-disc pl-6 space-y-1">
-              <li>✅ Exécuté les tests du backend Laravel.</li>
-              <li>✅ Vérifié et compilé le frontend React.</li>
-              <li>✅ Généré les artefacts de build.</li>
-              <li>✅ Déployé automatiquement l'application.</li>
+              <li> Exécuté les tests du backend Laravel.</li>
+              <li> Vérifié et compilé le frontend React.</li>
+              <li>Généré les artefacts de build.</li>
+              <li> Déployé automatiquement l'application.</li>
             </ul>
 
             <p className="mt-4 font-medium text-green-700">
